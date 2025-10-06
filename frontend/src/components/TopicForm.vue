@@ -22,7 +22,7 @@
         <span class="h-2 w-2 animate-ping rounded-full bg-white"></span>
         Generating…
       </span>
-      <span v-else>Generate Video</span>
+      <span v-else>Generate Script</span>
     </button>
   </form>
 </template>

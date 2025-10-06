@@ -51,18 +51,10 @@
           </div>
         </Transition>
 
-        <button
-          v-if="!video"
-          class="w-full rounded-lg bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-900/60 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="rendering"
-          @click="onRenderVideo"
-        >
-          <span v-if="rendering" class="flex items-center justify-center gap-2">
-            <span class="h-2 w-2 animate-ping rounded-full bg-white"></span>
-            Rendering video…
-          </span>
-          <span v-else>Generate Video</span>
-        </button>
+        <div v-if="rendering && !video" class="flex items-center justify-center gap-3 rounded-lg border border-brand-400/30 bg-brand-900/20 px-6 py-4 text-brand-300">
+          <span class="h-2 w-2 animate-ping rounded-full bg-brand-400"></span>
+          <span class="text-sm font-medium">Rendering video…</span>
+        </div>
       </div>
     </Transition>
   </section>
@@ -96,26 +88,20 @@ const onSubmit = async (payload: ScriptRequest) => {
   error.value = null;
   try {
     scriptResponse.value = await generateScript(payload);
+    // Automatically render video after script generation
+    if (scriptResponse.value) {
+      rendering.value = true;
+      video.value = await renderVideo(scriptResponse.value);
+    }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : "Failed to generate script";
+    error.value = err instanceof Error ? err.message : "Failed to generate script or render video";
     scriptResponse.value = null;
   } finally {
     generating.value = false;
-  }
-};
-
-const onRenderVideo = async () => {
-  if (!scriptResponse.value) return;
-  rendering.value = true;
-  error.value = null;
-  try {
-    video.value = await renderVideo(scriptResponse.value);
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "Failed to render video";
-  } finally {
     rendering.value = false;
   }
 };
+
 </script>
 
 <style scoped>
