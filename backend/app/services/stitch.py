@@ -135,9 +135,11 @@ async def render_video(response: models.ScriptResponse) -> models.VideoMetadata:
         except Exception as exc:  # pragma: no cover
             raise RuntimeError("Failed to stitch video") from exc
 
-    stored = await storage.save_render(uuid4().hex, video_bytes)
-    return models.VideoMetadata(
-        video_id=str(uuid4()),
+    video_id = uuid4().hex
+    stored = await storage.save_render(video_id, video_bytes)
+
+    metadata = models.VideoMetadata(
+        video_id=video_id,
         script_id=script.script_id,
         title=script.topic,
         status="completed",
@@ -145,13 +147,82 @@ async def render_video(response: models.ScriptResponse) -> models.VideoMetadata:
         storage_path=stored.url,
     )
 
+    # Save metadata to GCS
+    await _save_video_metadata(metadata)
+
+    return metadata
+
+
+async def _save_video_metadata(metadata: models.VideoMetadata) -> None:
+    """Save video metadata to GCS or local storage."""
+    metadata_json = json.dumps({
+        "video_id": metadata.video_id,
+        "script_id": metadata.script_id,
+        "title": metadata.title,
+        "status": metadata.status,
+        "created_at": metadata.created_at.isoformat() if metadata.created_at else None,
+        "storage_path": metadata.storage_path,
+        "thumbnail_url": metadata.thumbnail_url,
+    })
+
+    filename = f"metadata-{metadata.video_id}.json"
+    await storage.save_bytes(
+        name=f"metadata-{metadata.video_id}",
+        payload=metadata_json.encode("utf-8"),
+        suffix=".json",
+    )
+
 
 async def list_videos() -> list[models.VideoMetadata]:
-    """Retrieve stored video metadata."""
+    """Retrieve stored video metadata from GCS."""
     settings = get_settings()
+    config = storage._get_gcs_config()
+
+    def _load_from_gcs() -> list[models.VideoMetadata]:
+        """Load video metadata from GCS bucket."""
+        try:
+            from google.cloud import storage as gcs_storage
+        except ImportError:
+            return []
+
+        if not config:
+            return []
+
+        try:
+            client = gcs_storage.Client()
+            bucket = client.bucket(config.bucket)
+
+            # List all metadata files
+            blobs = bucket.list_blobs(prefix=config.prefix if config.prefix else None)
+
+            videos: list[models.VideoMetadata] = []
+            for blob in blobs:
+                if blob.name.endswith(".json") and "metadata-" in blob.name:
+                    try:
+                        content = blob.download_as_text()
+                        data = json.loads(content)
+                        # Parse ISO format datetime
+                        if data.get("created_at"):
+                            data["created_at"] = datetime.fromisoformat(data["created_at"])
+                        videos.append(models.VideoMetadata(**data))
+                    except Exception as e:
+                        print(f"Failed to load metadata from {blob.name}: {e}")
+                        continue
+
+            videos.sort(key=lambda v: v.created_at if v.created_at else datetime.min, reverse=True)
+            return videos
+        except Exception as e:
+            print(f"Failed to list videos from GCS: {e}")
+            return []
+
+    # If using GCS, load from there
+    if config:
+        return await asyncio.to_thread(_load_from_gcs)
+
+    # Fallback to local file-based storage
     index_path = Path(settings.media_root) / "videos.json"
 
-    def _load() -> list[models.VideoMetadata]:
+    def _load_local() -> list[models.VideoMetadata]:
         if not index_path.exists():
             return []
 
@@ -172,7 +243,7 @@ async def list_videos() -> list[models.VideoMetadata]:
             except Exception:
                 continue
 
-        videos.sort(key=lambda video: video.created_at, reverse=True)
+        videos.sort(key=lambda video: video.created_at if video.created_at else datetime.min, reverse=True)
         return videos
 
-    return await asyncio.to_thread(_load)
+    return await asyncio.to_thread(_load_local)

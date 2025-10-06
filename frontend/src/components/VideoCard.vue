@@ -1,20 +1,34 @@
 <template>
-  <article class="rounded-xl border border-white/10 bg-slate-900/60 p-5 shadow-lg shadow-black/40">
-    <header class="mb-4 flex items-start justify-between gap-3">
-      <div>
-        <h3 class="text-lg font-semibold text-white">{{ video.title }}</h3>
-        <p class="text-xs uppercase tracking-wide text-slate-400">{{ formattedDate }}</p>
+  <article class="overflow-hidden rounded-xl border border-white/10 bg-slate-900/60 shadow-lg shadow-black/40 transition hover:border-white/20">
+    <div class="aspect-video w-full bg-slate-950">
+      <video
+        v-if="video.storage_path"
+        :src="video.storage_path"
+        class="h-full w-full object-cover"
+        muted
+        @mouseenter="$event.target.play()"
+        @mouseleave="$event.target.pause(); $event.target.currentTime = 0"
+      />
+      <div v-else class="flex h-full items-center justify-center text-slate-600">
+        No preview
       </div>
-      <span
-        class="rounded-full px-3 py-1 text-xs font-semibold"
-        :class="video.status === 'completed' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-200'"
-      >
-        {{ video.status }}
-      </span>
-    </header>
-    <p class="text-sm text-slate-300">ID: {{ video.video_id }}</p>
-    <div class="mt-4 flex flex-wrap items-center gap-3">
-      <slot />
+    </div>
+    <div class="p-5">
+      <header class="mb-3 flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-white">{{ video.title }}</h3>
+          <p class="text-xs uppercase tracking-wide text-slate-400">{{ formattedDate }}</p>
+        </div>
+        <span
+          class="rounded-full px-3 py-1 text-xs font-semibold"
+          :class="video.status === 'completed' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-200'"
+        >
+          {{ video.status }}
+        </span>
+      </header>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <slot />
+      </div>
     </div>
   </article>
 </template>

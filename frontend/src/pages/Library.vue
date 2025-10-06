@@ -1,8 +1,8 @@
 <template>
-  <section class="space-y-8">
-    <header class="space-y-2">
+  <section class="mx-auto max-w-6xl space-y-8">
+    <header class="space-y-2 text-center">
       <h1 class="text-3xl font-semibold text-white">Your Library</h1>
-      <p class="text-sm text-slate-300">Keep track of rendered experiments and jump back into playback.</p>
+      <p class="text-sm text-slate-300">All your generated videos in one place.</p>
     </header>
 
     <div v-if="loading" class="rounded-lg border border-white/10 bg-slate-900/50 p-6 text-sm text-slate-200">
