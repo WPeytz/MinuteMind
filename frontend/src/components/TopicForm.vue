@@ -12,18 +12,19 @@
       />
     </div>
 
-
-    <button
-      class="inline-flex items-center justify-center rounded-lg bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-900/50 transition hover:bg-brand-400 hover:shadow-brand-800/70 disabled:cursor-not-allowed disabled:opacity-50"
-      type="submit"
-      :disabled="disabled"
-    >
-      <span v-if="disabled" class="flex items-center gap-2">
-        <span class="h-2 w-2 animate-ping rounded-full bg-white"></span>
-        Generating…
-      </span>
-      <span v-else>Generate Script</span>
-    </button>
+    <div class="flex justify-center">
+      <button
+        class="inline-flex items-center justify-center rounded-lg bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-900/50 transition hover:bg-brand-400 hover:shadow-brand-800/70 disabled:cursor-not-allowed disabled:opacity-50"
+        type="submit"
+        :disabled="disabled"
+      >
+        <span v-if="disabled" class="flex items-center gap-2">
+          <span class="h-2 w-2 animate-ping rounded-full bg-white"></span>
+          Generating…
+        </span>
+        <span v-else>Generate Video</span>
+      </button>
+    </div>
   </form>
 </template>
 
