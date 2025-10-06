@@ -1,9 +1,9 @@
 <template>
   <section class="mx-auto max-w-4xl space-y-10">
-    <header class="space-y-3">
+    <header class="space-y-3 text-center">
       <p class="text-sm uppercase tracking-widest text-brand-300/80">AI Assisted Workflows</p>
       <h1 class="text-4xl font-semibold text-white">MinuteMind videos</h1>
-      <p class="max-w-2xl text-sm text-slate-300">
+      <p class="mx-auto max-w-2xl text-sm text-slate-300">
         What do you want to learn?
       </p>
     </header>
