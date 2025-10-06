@@ -1,0 +1,1 @@
+"""MinuteMind backend package."""

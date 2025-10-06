@@ -1,0 +1,33 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: minutemind-api
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "2"
+    spec:
+      containers:
+        - image: gcr.io/PROJECT_ID/minutemind-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: latest
+            - name: MINUTEMIND_STORAGE_BASE
+              value: https://YOUR_CLOUDRUN_HOST/media
+            - name: MINUTEMIND_MEDIA_ROOT
+              value: /tmp/media
+            - name: MINUTEMIND_FAKE_VIDEO
+              value: "1"
+            - name: MINUTEMIND_FAKE_TTS
+              value: "0"
+            - name: MINUTEMIND_FAKE_LLM
+              value: "0"

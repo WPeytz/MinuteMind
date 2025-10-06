@@ -1,0 +1,27 @@
+[project]
+name = "minutemind-backend"
+version = "0.1.0"
+description = "MinuteMind FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlmodel>=0.0.22",
+    "pydantic>=2.7.0",
+    "openai>=1.30.1",
+    "moviepy>=1.0.3",
+    "google-cloud-storage>=2.16.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+]
+
+[tool.uvicorn]
+app = "app.main:app"
+reload = true
+host = "0.0.0.0"
+port = 8000

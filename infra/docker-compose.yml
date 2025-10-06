@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: minutemind
+      POSTGRES_PASSWORD: minutemind
+      POSTGRES_DB: minutemind
+    ports:
+      - "5432:5432"
+  storage:
+    image: minio/minio
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minutemind
+      MINIO_ROOT_PASSWORD: minutemind123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
