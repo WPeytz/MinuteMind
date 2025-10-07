@@ -76,6 +76,7 @@ def _guess_content_type(suffix: str) -> str:
         ".mp4": "video/mp4",
         ".wav": "audio/wav",
         ".mp3": "audio/mpeg",
+        ".png": "image/png",
     }
     return mapping.get(suffix.lower(), "application/octet-stream")
 
@@ -113,6 +114,16 @@ def _upload_to_gcs(config: _GCSConfig, filename: str, payload: bytes, content_ty
 
 async def save_bytes(name: str, payload: bytes, *, suffix: str) -> StoredMedia:
     """Persist raw bytes and return a storage descriptor."""
+    config = _get_gcs_config()
+    if config:
+        filename = f"{name}{suffix}"
+        return await asyncio.to_thread(
+            _upload_to_gcs,
+            config,
+            filename,
+            payload,
+            _guess_content_type(suffix),
+        )
     media_root = _ensure_media_root()
     filename = f"{name}{suffix}"
     file_path = media_root / filename
@@ -141,5 +152,18 @@ async def save_render(name: str, payload: bytes) -> StoredMedia:
 
 def resolve_url(url: str) -> Path:
     """Convert a storage URL back into a filesystem path."""
+    # If it's a GCS URL, download it to a temp location
+    if url.startswith("https://storage.googleapis.com/"):
+        filename = url.rstrip("/").split("/")[-1]
+        local_path = _ensure_media_root() / filename
+
+        # Download if not already cached locally
+        if not local_path.exists():
+            import urllib.request
+            urllib.request.urlretrieve(url, str(local_path))
+
+        return local_path
+
+    # Otherwise, assume it's a local file
     filename = url.rstrip("/").split("/")[-1]
     return _ensure_media_root() / filename

@@ -64,25 +64,20 @@ def _render_with_moviepy(script: models.Script, audio_segments: Sequence[models.
             try:
                 image_path = storage.resolve_url(image_url)
                 if image_path.exists():
-                    # Resize image using PIL before creating clip (avoids PIL.ANTIALIAS deprecation)
+                    # Resize image using PIL before creating clip
                     from PIL import Image
                     img = Image.open(str(image_path))
-                    # Resize to fit 1280x720 maintaining aspect ratio
-                    img.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+                    # Resize to fit 1280x720 maintaining aspect ratio using faster algorithm
+                    img.thumbnail((1280, 720), Image.Resampling.BILINEAR)  # Faster than LANCZOS
                     # Create a 1280x720 black background
                     background = Image.new('RGB', (1280, 720), (22, 28, 45))
                     # Paste resized image centered
                     offset = ((1280 - img.width) // 2, (720 - img.height) // 2)
                     background.paste(img, offset)
-                    # Save to temp file
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-                        background.save(tmp.name, 'PNG')
-                        temp_path = tmp.name
-                    # Create clip from processed image
-                    visual_clip = ImageClip(temp_path).set_duration(duration)
-                    # Clean up temp file
-                    Path(temp_path).unlink(missing_ok=True)
+                    # Create clip directly from PIL Image to avoid temp file I/O
+                    import numpy as np
+                    img_array = np.array(background)
+                    visual_clip = ImageClip(img_array).set_duration(duration)
             except Exception as e:
                 print(f"Failed to load image for scene {scene.scene_id}: {e}")
 
@@ -97,16 +92,23 @@ def _render_with_moviepy(script: models.Script, audio_segments: Sequence[models.
     final = concatenate_videoclips(clips)
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
         out_path = Path(tmp.name)
-    # Prefer H.264 + AAC for wide compatibility; faster preset to keep Cloud Run snappy
+
+    # Get optimal thread count (use all available cores)
+    import multiprocessing
+    thread_count = multiprocessing.cpu_count()
+
+    # Prefer H.264 + AAC for wide compatibility; optimized for speed
     final.write_videofile(
         str(out_path),
         fps=24,
         codec="libx264",
         audio_codec="aac",
-        preset="ultrafast",
-        threads=0,
+        preset="veryfast",  # Slightly better quality than ultrafast with minimal speed impact
+        threads=thread_count,
         verbose=False,
         logger=None,
+        # Additional optimizations for faster encoding
+        ffmpeg_params=["-crf", "28", "-movflags", "+faststart"],
     )
     # Clean up clips to release file handles
     with contextlib.suppress(Exception):

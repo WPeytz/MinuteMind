@@ -107,9 +107,10 @@ async def generate_images_for_script(script: models.Script) -> dict[str, str]:
     settings = get_settings()
     use_mock = getattr(settings, 'use_mock_images', False)
 
-    image_map = {}
-    for scene in script.scenes:
-        image_url = await generate_scene_image(scene, script.script_id, use_mock)
-        image_map[scene.scene_id] = image_url
+    # Generate all images in parallel for faster processing
+    tasks = [generate_scene_image(scene, script.script_id, use_mock) for scene in script.scenes]
+    image_urls = await asyncio.gather(*tasks)
 
+    # Map scene IDs to their image URLs
+    image_map = {scene.scene_id: url for scene, url in zip(script.scenes, image_urls)}
     return image_map

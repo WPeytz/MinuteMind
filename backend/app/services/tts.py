@@ -61,28 +61,31 @@ def _render_with_openai_wav(text: str) -> bytes:
     raise RuntimeError("Unexpected response type from OpenAI TTS API")
 
 
+async def _synthesize_scene_audio(scene: models.ScriptScene, script_id: str, settings) -> models.SceneAudio:
+    """Generate audio for a single scene."""
+    if settings.use_mock_tts or not settings.openai_api_key:
+        audio_bytes = _fake_audio_payload(scene.narration)
+        suffix = ".wav"
+    else:  # pragma: no cover - requires live API
+        audio_bytes = await asyncio.to_thread(_render_with_openai_wav, scene.narration)
+        suffix = ".mp3"
+    # Persist using a suffix that matches the underlying payload so MoviePy can decode it.
+    stored = await storage.save_bytes(
+        name=f"{script_id}-{scene.scene_id}",
+        payload=audio_bytes,
+        suffix=suffix,
+    )
+    return models.SceneAudio(
+        scene_id=scene.scene_id,
+        audio_url=stored.url,
+        duration_seconds=None,
+    )
+
+
 async def synthesize_voice(script: models.Script) -> list[models.SceneAudio]:
     """Convert script text to audio bytes per scene."""
     settings = get_settings()
-    scene_audios: list[models.SceneAudio] = []
-    for scene in script.scenes:
-        if settings.use_mock_tts or not settings.openai_api_key:
-            audio_bytes = _fake_audio_payload(scene.narration)
-            suffix = ".wav"
-        else:  # pragma: no cover - requires live API
-            audio_bytes = await asyncio.to_thread(_render_with_openai_wav, scene.narration)
-            suffix = ".mp3"
-        # Persist using a suffix that matches the underlying payload so MoviePy can decode it.
-        stored = await storage.save_bytes(
-            name=f"{script.script_id}-{scene.scene_id}",
-            payload=audio_bytes,
-            suffix=suffix,
-        )
-        scene_audios.append(
-            models.SceneAudio(
-                scene_id=scene.scene_id,
-                audio_url=stored.url,
-                duration_seconds=None,
-            )
-        )
-    return scene_audios
+    # Generate all audio in parallel for faster processing
+    tasks = [_synthesize_scene_audio(scene, script.script_id, settings) for scene in script.scenes]
+    scene_audios = await asyncio.gather(*tasks)
+    return list(scene_audios)
