@@ -7,7 +7,7 @@
         v-model="topic"
         type="text"
         required
-        placeholder="Enter a focus topic"
+        :placeholder="placeholder"
         class="w-full rounded-lg border border-white/10 bg-slate-900 px-4 py-3 text-base text-white shadow-inner shadow-black/40 focus:border-brand-400 focus:outline-none"
       />
     </div>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 
 const props = defineProps<{
   busy?: boolean;
@@ -42,8 +42,51 @@ const emit = defineEmits<{
 const topic = ref("");
 const duration = ref(1);
 const tone = ref("engaging");
+const placeholder = ref("");
 
 const disabled = computed(() => props.busy || topic.value.trim().length === 0);
+
+// Typing animation for placeholder
+const examples = ["Machine Learning", "Deep Learning", "Reinforcement Learning", "Large Language Models"];
+let currentIndex = 0;
+let currentText = "";
+let isDeleting = false;
+let typingTimeout: number | null = null;
+
+const typeEffect = () => {
+  const currentExample = examples[currentIndex];
+
+  if (!isDeleting) {
+    // Typing forward
+    currentText = currentExample.substring(0, currentText.length + 1);
+    placeholder.value = currentText;
+
+    if (currentText === currentExample) {
+      // Pause at the end before deleting
+      typingTimeout = window.setTimeout(() => {
+        isDeleting = true;
+        typeEffect();
+      }, 2000);
+      return;
+    }
+
+    typingTimeout = window.setTimeout(typeEffect, 100);
+  } else {
+    // Deleting backward
+    currentText = currentExample.substring(0, currentText.length - 1);
+    placeholder.value = currentText;
+
+    if (currentText === "") {
+      // Move to next example
+      isDeleting = false;
+      currentIndex = (currentIndex + 1) % examples.length;
+      typingTimeout = window.setTimeout(typeEffect, 500);
+      return;
+    }
+
+    typingTimeout = window.setTimeout(typeEffect, 50);
+  }
+};
 
 onMounted(() => {
   const stored = localStorage.getItem("minutemind-settings");
@@ -55,6 +98,15 @@ onMounted(() => {
     } catch (e) {
       console.error("Failed to load settings", e);
     }
+  }
+
+  // Start typing animation
+  typeEffect();
+});
+
+onUnmounted(() => {
+  if (typingTimeout !== null) {
+    clearTimeout(typingTimeout);
   }
 });
 
