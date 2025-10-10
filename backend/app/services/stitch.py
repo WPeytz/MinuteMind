@@ -249,3 +249,65 @@ async def list_videos() -> list[models.VideoMetadata]:
         return videos
 
     return await asyncio.to_thread(_load_local)
+
+
+async def delete_video(video_id: str) -> None:
+    """Delete a video and its metadata from GCS or local storage."""
+    settings = get_settings()
+    config = storage._get_gcs_config()
+
+    def _delete_from_gcs() -> None:
+        """Delete video and metadata from GCS bucket."""
+        try:
+            from google.cloud import storage as gcs_storage
+        except ImportError:
+            return
+
+        if not config:
+            return
+
+        try:
+            client = gcs_storage.Client()
+            bucket = client.bucket(config.bucket)
+
+            # Delete video file
+            video_blob_name = storage._build_gcs_blob_name(config, f"{video_id}.mp4")
+            video_blob = bucket.blob(video_blob_name)
+            if video_blob.exists():
+                video_blob.delete()
+
+            # Delete metadata file
+            metadata_blob_name = storage._build_gcs_blob_name(config, f"metadata-{video_id}.json")
+            metadata_blob = bucket.blob(metadata_blob_name)
+            if metadata_blob.exists():
+                metadata_blob.delete()
+
+        except Exception as e:
+            print(f"Failed to delete video from GCS: {e}")
+            raise
+
+    # If using GCS, delete from there
+    if config:
+        return await asyncio.to_thread(_delete_from_gcs)
+
+    # Fallback to local file-based storage
+    def _delete_local() -> None:
+        media_root = Path(settings.media_root)
+
+        # Delete video file
+        video_path = media_root / f"{video_id}.mp4"
+        if video_path.exists():
+            video_path.unlink()
+
+        # Update videos.json index
+        index_path = media_root / "videos.json"
+        if index_path.exists():
+            try:
+                videos = json.loads(index_path.read_text(encoding="utf-8") or "[]")
+                if isinstance(videos, list):
+                    videos = [v for v in videos if isinstance(v, dict) and v.get("video_id") != video_id]
+                    index_path.write_text(json.dumps(videos, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+    return await asyncio.to_thread(_delete_local)

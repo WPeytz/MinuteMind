@@ -18,3 +18,10 @@ async def render_video(script: models.ScriptResponse, _=Depends(get_db)) -> mode
 async def list_videos(_=Depends(get_db)) -> list[models.VideoMetadata]:
     """List available generated videos."""
     return await stitch.list_videos()
+
+
+@router.delete("/{video_id}")
+async def delete_video(video_id: str, _=Depends(get_db)) -> dict[str, str]:
+    """Delete a video and its metadata."""
+    await stitch.delete_video(video_id)
+    return {"message": "Video deleted successfully"}
