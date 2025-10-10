@@ -12,7 +12,11 @@
     </header>
 
     <main class="mx-auto w-full max-w-6xl px-6 py-10">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </RouterView>
     </main>
   </div>
 </template>
