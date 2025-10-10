@@ -25,4 +25,8 @@ export async function fetchVideos(): Promise<VideoMetadata[]> {
   return data;
 }
 
+export async function deleteVideo(videoId: string): Promise<void> {
+  await api.delete(`/videos/${videoId}`);
+}
+
 export default api;

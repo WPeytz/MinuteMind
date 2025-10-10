@@ -21,6 +21,14 @@
         >
           ▶︎ Open Player
         </RouterLink>
+        <button
+          @click="handleDelete(video.video_id)"
+          :disabled="deleting === video.video_id"
+          class="inline-flex items-center gap-2 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-300 transition hover:border-red-400/60 hover:bg-red-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span v-if="deleting === video.video_id">Deleting...</span>
+          <span v-else>🗑 Delete</span>
+        </button>
       </VideoCard>
     </div>
   </section>
@@ -30,12 +38,13 @@
 import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 
-import { fetchVideos } from "@/api/client";
+import { fetchVideos, deleteVideo } from "@/api/client";
 import type { VideoMetadata } from "@/api/types";
 import VideoCard from "@/components/VideoCard.vue";
 
 const loading = ref(true);
 const videos = ref<VideoMetadata[]>([]);
+const deleting = ref<string | null>(null);
 
 onMounted(async () => {
   try {
@@ -44,4 +53,22 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+const handleDelete = async (videoId: string) => {
+  if (!confirm("Are you sure you want to delete this video? This action cannot be undone.")) {
+    return;
+  }
+
+  deleting.value = videoId;
+  try {
+    await deleteVideo(videoId);
+    // Remove from local list
+    videos.value = videos.value.filter((v) => v.video_id !== videoId);
+  } catch (error) {
+    alert("Failed to delete video. Please try again.");
+    console.error("Delete error:", error);
+  } finally {
+    deleting.value = null;
+  }
+};
 </script>
