@@ -17,14 +17,7 @@
     </Transition>
 
     <Transition name="fade">
-      <div v-if="hasScript" class="space-y-6">
-        <div v-if="!video" class="flex items-center justify-between">
-          <h2 class="text-2xl font-semibold text-white">Script Generated</h2>
-          <span class="text-xs uppercase tracking-wide text-slate-400">
-            {{ scenes.length }} scenes • ~{{ scriptDuration }} min
-          </span>
-        </div>
-
+      <div v-if="rendering || video" class="space-y-6">
         <Transition name="fade">
           <div v-if="video" class="space-y-4">
             <h2 class="text-2xl font-semibold text-white">Your Video</h2>
@@ -83,14 +76,13 @@ const audioFor = (sceneId: string): SceneAudio[] => {
 
 const onSubmit = async (payload: ScriptRequest) => {
   generating.value = true;
-  rendering.value = false;
+  rendering.value = true;
   video.value = null;
   error.value = null;
   try {
     scriptResponse.value = await generateScript(payload);
     // Automatically render video after script generation
     if (scriptResponse.value) {
-      rendering.value = true;
       video.value = await renderVideo(scriptResponse.value);
     }
   } catch (err) {
