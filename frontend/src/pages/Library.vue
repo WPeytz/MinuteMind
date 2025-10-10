@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, onActivated, ref } from "vue";
 import { RouterLink } from "vue-router";
 
 import { fetchVideos, deleteVideo } from "@/api/client";
@@ -46,13 +46,19 @@ const loading = ref(true);
 const videos = ref<VideoMetadata[]>([]);
 const deleting = ref<string | null>(null);
 
-onMounted(async () => {
+const loadVideos = async () => {
+  loading.value = true;
   try {
     videos.value = await fetchVideos();
   } finally {
     loading.value = false;
   }
-});
+};
+
+onMounted(loadVideos);
+
+// Refresh videos when returning to Library tab (due to keep-alive)
+onActivated(loadVideos);
 
 const handleDelete = async (videoId: string) => {
   if (!confirm("Are you sure you want to delete this video? This action cannot be undone.")) {
