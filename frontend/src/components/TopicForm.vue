@@ -18,7 +18,7 @@
         type="submit"
         :disabled="disabled"
       >
-        <span v-if="disabled" class="flex items-center gap-2">
+        <span v-if="busy" class="flex items-center gap-2">
           <span class="h-2 w-2 animate-ping rounded-full bg-white"></span>
           Generating…
         </span>

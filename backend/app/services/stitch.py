@@ -54,8 +54,8 @@ def _render_with_moviepy(script: models.Script, audio_segments: Sequence[models.
         # Load audio; MoviePy reads WAV/MP3/AAC via ffmpeg. Explicitly set fps via format to avoid misdetection.
         audio_clip = AudioFileClip(str(audio_path))
 
-        # Ensure the background matches (at least) the audio duration
-        duration = max(int(getattr(scene, "duration_seconds", 0) or 0), float(audio_clip.duration))
+        # Use exact audio duration to avoid unnatural pauses between scenes
+        duration = float(audio_clip.duration)
 
         # Try to load image for this scene
         visual_clip = None
