@@ -30,16 +30,24 @@
                 Your browser does not support the video tag.
               </video>
             </div>
-            <div class="flex items-center justify-between text-sm text-slate-300">
-              <p>{{ video.title }}</p>
-              <a
-                :href="video.storage_path ?? '#'"
-                target="_blank"
-                rel="noreferrer"
-                class="text-brand-300 hover:text-brand-200"
-              >
-                Open in new tab →
-              </a>
+            <div class="flex items-center justify-between gap-4 text-sm">
+              <p class="text-slate-300">{{ video.title }}</p>
+              <div class="flex gap-3">
+                <RouterLink
+                  :to="{ name: 'library' }"
+                  class="rounded-lg bg-brand-500 px-4 py-2 font-medium text-white transition hover:bg-brand-400"
+                >
+                  View in Library
+                </RouterLink>
+                <a
+                  :href="video.storage_path ?? '#'"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="text-brand-300 hover:text-brand-200"
+                >
+                  Open in new tab →
+                </a>
+              </div>
             </div>
           </div>
         </Transition>
@@ -54,10 +62,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
 import { generateScript, renderVideo } from "@/api/client";
-import type { SceneAudio, ScriptRequest, ScriptResponse, VideoMetadata } from "@/api/types";
+import type { ScriptRequest, ScriptResponse, VideoMetadata } from "@/api/types";
 import TopicForm from "@/components/TopicForm.vue";
 
 const generating = ref(false);
@@ -65,14 +74,6 @@ const rendering = ref(false);
 const scriptResponse = ref<ScriptResponse | null>(null);
 const video = ref<VideoMetadata | null>(null);
 const error = ref<string | null>(null);
-
-const hasScript = computed(() => scriptResponse.value !== null);
-const scenes = computed(() => scriptResponse.value?.script.scenes ?? []);
-const scriptDuration = computed(() => scriptResponse.value?.script.duration_minutes ?? 0);
-
-const audioFor = (sceneId: string): SceneAudio[] => {
-  return (scriptResponse.value?.audio ?? []).filter((audio) => audio.scene_id === sceneId);
-};
 
 const onSubmit = async (payload: ScriptRequest) => {
   generating.value = true;
