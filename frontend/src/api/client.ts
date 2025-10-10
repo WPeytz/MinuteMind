@@ -7,6 +7,7 @@ const baseURL = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
 
 const api = axios.create({
   baseURL,
+  maxRedirects: 5, // Follow redirects
 });
 
 export async function generateScript(payload: ScriptRequest): Promise<ScriptResponse> {
@@ -20,7 +21,7 @@ export async function renderVideo(payload: ScriptResponse): Promise<VideoMetadat
 }
 
 export async function fetchVideos(): Promise<VideoMetadata[]> {
-  const { data } = await api.get<VideoMetadata[]>("/videos");
+  const { data } = await api.get<VideoMetadata[]>("/videos/");
   return data;
 }
 
